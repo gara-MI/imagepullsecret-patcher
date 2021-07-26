@@ -29,7 +29,11 @@ var (
 	configExcludedNamespaces   string        = ""
 	configServiceAccounts      string        = defaultServiceAccountName
 	configLoopDuration         time.Duration = 10 * time.Second
-
+	ExpiresAt                  time.Time 	 = time.Now()
+	AWS_SECRET_ACCESS_KEY string =""
+	AWS_ACCESS_KEY_ID string =""
+	AWS_REGION string =""
+	AWS_ACCOUNT_ID string =""
 	dockerConfigJSON string
 )
 
@@ -55,7 +59,13 @@ func main() {
 	flag.StringVar(&configServiceAccounts, "serviceaccounts", LookupEnvOrString("CONFIG_SERVICEACCOUNTS", configServiceAccounts), "comma-separated list of serviceaccounts to patch")
 	flag.DurationVar(&configLoopDuration, "loop-duration", LookupEnvOrDuration("CONFIG_LOOP_DURATION", configLoopDuration), "String defining the loop duration")
 	flag.Parse()
-
+	AWS_REGION = os.Getenv("AWS_REGION")
+	AWS_ACCOUNT_ID = os.Getenv("AWS_ACCOUNT_ID")
+	AWS_ACCESS_KEY_ID = os.Getenv("AWS_ACCESS_KEY_ID")
+	AWS_SECRET_ACCESS_KEY = os.Getenv("AWS_SECRET_ACCESS_KEY")
+	if AWS_REGION == "" || AWS_ACCOUNT_ID == "" || AWS_ACCESS_KEY_ID == "" || AWS_SECRET_ACCESS_KEY == "" {
+		panic("please set the following environment variables: AWS_REGION, AWS_ACCOUNT_ID, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY")
+	}
 	// setup logrus
 	if configDebug {
 		log.SetLevel(log.DebugLevel)
@@ -95,7 +105,7 @@ func loop(k8s *k8sClient) {
 	var err error
 
 	// Populate secret value to set
-	dockerConfigJSON, err = getDockerConfigJSON()
+	dockerConfigJSON, err = getEcrCredentials(AWS_ACCOUNT_ID, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
 	if err != nil {
 		log.Panic(err)
 	}
